@@ -1,0 +1,359 @@
+<?php
+/**
+ * AdminPageIcons
+ *
+ * AdminPageListIcons module for ProcessWire 2.4
+ * Copyright (C) 2014 by Maks Feltrin - pine3ree
+ *
+ */
+
+class AdminPageIcons extends WireData implements Module, ConfigurableModule
+{
+    public static function getModuleInfo()
+    {
+        return array(
+            'title'    => 'Admin Page icons',
+            'version'  => 10,
+            'summary'  => 'Add custom font icons for page actions and for page based on template in the Admin/Page area',
+            'author'   => 'pine3ree',
+            'href'     => 'https://github.com/pine3ree/AdminPageIcons',
+            'singular' => true,
+            'autoload' => true,
+        );
+    }
+
+    public function __construct()
+    {
+        // Default settings
+        $this->set('std_icon_lg', 0);
+        $this->set('sys_icon_lg', 0);
+
+        $this->set('icon_admin', 'wrench');
+        $this->set('icon_404', 'warning');
+        $this->set('icon_trash', 'trash-o');
+
+        $this->set('icon_home', 'home');
+        $this->set('icon_search', 'search');
+        $this->set('icon_sitemap', 'sitemap');
+        $this->set('icon_default', 'file-o');
+        $this->set('icon_basic_page', 'file-o');
+
+        $this->set('action_hide_label', 0);
+
+        $this->set('icon_action_edit', 'pencil');
+        $this->set('icon_action_view', 'external-link');
+        $this->set('icon_action_new', 'plus');
+        $this->set('icon_action_move', 'sort');
+        $this->set('icon_action_empty', 'eraser');
+        $this->set('icon_action_publish', 'check-square-o');
+        $this->set('icon_action_hide', 'eye-slash');
+    }
+
+    public function init()
+    {
+        $this->addHookAfter('ProcessPageListRender::getPageLabel', $this, 'hookAfterPageLabel');
+        /**
+         * Not supported in PW 2.4.0 => hook into ProcessPageList::execute
+         *
+        $this->addHookAfter('ProcessPageListRenderJSON::renderChild', $this, 'hookAfterRenderChild');
+        */
+        $this->addHookAfter('ProcessPageList::execute', $this, 'hookAfterProcessPageListExecute');
+        $this->addHookAfter('ProcessPageListRender::getPageActions', $this, 'hookAfterPageActions', array(
+            'priority' => 9999,
+        ));
+    }
+
+    public function ready()
+    {
+    }
+
+    public static function getModuleConfigInputfields(array $data)
+    {
+        $inputfields = new InputfieldWrapper();
+
+        //----------------------------------------------------------------------
+        // SYSTEM ICONS
+        //----------------------------------------------------------------------
+        $f = new InputfieldMarkup();
+        $f->setAttribute('value', '<h3>' . __('System templates Icons') . '</h3>');
+        $f->set('columnWidth', 100);
+        $inputfields->add($f);
+
+        $fName = 'sys_icon_lg';
+        $f = wire('modules')->get('InputfieldCheckbox');
+        $f->setAttribute('name', 'sys_icon_lg');
+        $f->set('label', __('Use large system icons'));
+        $f->setAttribute('value', 1);
+        if(isset($data[$fName])) {
+    		$f->setAttribute('checked', (bool) $data[$fName]);
+        }
+        $inputfields->add($f);
+
+        $fs = new InputfieldFieldset();
+
+        $fName = 'icon_404';
+        $f = wire('modules')->get('InputfieldText');
+        $f->setAttribute('name', $fName);
+        $f->set('label', __('Icon for 404 http error page'));
+        $f->set('columnWidth', 33);
+        if(isset($data[$fName])) {
+            $f->setAttribute('value', $data[$fName]);
+            $f->set('icon', $f->getAttribute('value'));
+        }
+        $f->setAttribute('placeholder', wire('modules')->get('AdminPageIcons')->get($fName));
+        $fs->add($f);
+
+        $fName = 'icon_admin';
+        $f = wire('modules')->get('InputfieldText');
+        $f->setAttribute('name', $fName);
+        $f->set('label', __('Icon for admin root page'));
+        $f->set('columnWidth', 34);
+        if(isset($data[$fName])) {
+            $f->setAttribute('value', $data[$fName]);
+            $f->set('icon', $f->getAttribute('value'));
+        }
+        $f->setAttribute('placeholder', wire('modules')->get('AdminPageIcons')->get($fName));
+        $fs->add($f);
+
+        $fName = 'icon_trash';
+        $f = wire('modules')->get('InputfieldText');
+        $f->setAttribute('name', $fName);
+        $f->set('label', __('Icon for trash page'));
+        $f->set('columnWidth', 33);
+        if(isset($data[$fName])) {
+            $f->setAttribute('value', $data[$fName]);
+            $f->set('icon', $f->getAttribute('value'));
+        }
+        $f->setAttribute('placeholder', wire('modules')->get('AdminPageIcons')->get($fName));
+        $fs->add($f);
+
+        $inputfields->add($fs);
+        //----------------------------------------------------------------------
+
+        //----------------------------------------------------------------------
+        // TEMPLATE ICONS
+        //----------------------------------------------------------------------
+        $f = new InputfieldMarkup();
+        $f->setAttribute('value', '<h3>' . __('Frontend templates Icons') . '</h3>');
+        $f->set('columnWidth', 100);
+        $inputfields->add($f);
+
+        $fName = 'std_icon_lg';
+        $f = wire('modules')->get('InputfieldCheckbox');
+        $f->setAttribute('name', $fName);
+        $f->set('label', __('Use large icons'));
+        $f->setAttribute('value', 1);
+        if(isset($data[$fName])) {
+    		$f->setAttribute('checked', (bool) $data[$fName]);
+        }
+        $inputfields->add($f);
+
+        $fs = new InputfieldFieldset();
+
+        $count = 0;
+        $templates = wire('templates');
+
+        foreach ($templates as $template) {
+           $templateName = $template->get('name');
+
+            if (in_array($templateName, array('admin', 'role', 'user', 'permission', 'language'))) {
+                continue;
+            }
+
+            $fName = 'icon_' . wire('sanitizer')->fieldName($templateName);
+
+            $f = wire('modules')->get('InputfieldText');
+            $f->setAttribute('name', $fName);
+            $f->set('label', sprintf(__('%s'), $templateName));
+            $f->set('columnWidth', (($count - 1) % 3 == 0) ? 34 : 33);
+            if(isset($data[$fName])) {
+                $f->setAttribute('value', $data[$fName]);
+                $f->set('icon', $f->getAttribute('value'));
+            }
+            $f->setAttribute('placeholder', wire('modules')->get('AdminPageIcons')->get($fName));
+            $fs->add($f);
+
+            $count++;
+        }
+
+        $remainder = $count % 3;
+        $empty = $remainder ? 3 - $count % 3 : 0;
+        $count = 0;
+        if ($empty > 0) for ($i = 0; $i < $empty; $i++) {
+            $f = new InputfieldMarkup();
+            $f->set('columnWidth', ($count == 0) ? 34 : 33);
+            $f->set('label', '&nbsp;');
+            $f->setAttribute('value', '&nbsp;');
+            $fs->add($f);
+
+            $count++;
+        }
+
+        $inputfields->add($fs);
+        //----------------------------------------------------------------------
+
+        //----------------------------------------------------------------------
+        // ACTION ICONS
+        //----------------------------------------------------------------------
+        $f = new InputfieldMarkup();
+        $f->setAttribute('value', '<h3>' . __('Action Icons') . '</h3>');
+        $f->set('columnWidth', 100);
+        $inputfields->add($f);
+
+        $fName = 'action_hide_label';
+        $f = wire('modules')->get('InputfieldCheckbox');
+        $f->setAttribute('name', $fName);
+        $f->set('label', __('Hide action label if icon is set'));
+        $f->setAttribute('value', 1);
+        if(isset($data[$fName])) {
+    		$f->setAttribute('checked', (bool) $data[$fName]);
+        }
+        $inputfields->add($f);
+
+        $fs = new InputfieldFieldset();
+
+        $actions = array('edit', 'view', 'new', 'move', 'empty', 'publish', 'hide');
+        $count = 0;
+        foreach ($actions as $action) {
+            $fName = 'icon_action_' . wire('sanitizer')->fieldName($action);
+
+            $f = wire('modules')->get('InputfieldText');
+            $f->setAttribute('name', $fName);
+            $f->set('label', __(sprintf('%s', ucfirst($action))));
+            $f->set('columnWidth', 25);
+            if(isset($data[$fName])) {
+                $f->setAttribute('value', $data[$fName]);
+                $f->set('icon', $f->getAttribute('value'));
+            }
+            $f->setAttribute('placeholder', wire('modules')->get('AdminPageIcons')->get($fName));
+            $fs->add($f);
+
+            $count++;
+        }
+
+        $remainder = $count % 4;
+        $empty = $remainder ? 4 - $count % 4 : 0;
+        $count = 0;
+        if ($empty > 0) for ($i = 0; $i < $empty; $i++) {
+            $f = new InputfieldMarkup();
+            $f->set('columnWidth', 25);
+            $f->set('label', '&nbsp;');
+            $f->setAttribute('value', '&nbsp;');
+            $fs->add($f);
+        }
+
+        $inputfields->add($fs);
+        //----------------------------------------------------------------------
+
+        return $inputfields;
+    }
+
+    public function hookAfterPageActions($event)
+    {
+        $processPageListRenderer = $event->object;
+
+        $page = $event->arguments(0);
+
+        $actions = $event->return;
+
+        $outputFormatting = $page->outputFormatting;
+		$page->setOutputFormatting(false);
+        foreach ($actions as &$action) {
+            $fname = 'icon_action_' . strtolower($action['cn']);
+            $icon = $this->$fname;
+            if ($icon) {
+                $icon = '<i class="fa fa-' . $icon . ' fa-fw" title="' . htmlentities($action['name']) . '"></i>';
+                $action['name'] = $this->get('action_hide_label') ? $icon : $icon . ' ' . $action['name'];
+            }
+        }
+		$page->setOutputFormatting($outputFormatting);
+
+        $event->return = $actions;
+    }
+
+    public function hookAfterProcessPageListExecute($event)
+    {
+        $processPageList = $event->object;
+
+        $render = isset($_GET['render']) ? strtoupper($this->sanitizer->name($_GET['render'])) : null;
+
+        if ($render === 'JSON' || ($processPageList->render === 'JSON')) {
+            $extraClass = $this->get('sys_icon_lg') ? ' fa-lg' : '';
+
+            $a = json_decode($event->return, true);
+
+            $children = $a['children'];
+
+            foreach ($children as &$child) {
+                $id = $child['id'];
+
+                $icon = null;
+                if (wire('config')->http404PageID == $id) {
+                    $icon = $this->get('icon_404');
+                } elseif (wire('config')->adminRootPageID == $id) {
+                    $icon = $this->get('icon_admin');
+                } elseif (wire('config')->trashPageID == $id) {
+                    $icon = $this->get('icon_trash');
+                }
+                if ($icon) {
+                    $icon =  '<i class="fa fa-' . $icon . ' fa-fw' . $extraClass . '"></i> ';
+                    $child['label'] = $icon . $child['label'];
+                }
+            }
+
+            $a['children'] = $children;
+
+            $event->return = json_encode($a);
+        }
+    }
+
+    /**
+     * Not supported in PW 2.4.0
+     * @param type $event
+     *
+    public function hookAfterRenderChild($event)
+    {
+        $a = $event->return;
+
+        $id = $a['id'];
+
+        $icon = null;
+
+        if (wire('config')->http404PageID == $a['id']) {
+            $icon = $this->icon_404;
+        } elseif (wire('config')->adminRootPageID == $a['id']) {
+            $icon = $this->icon_admin;
+        } elseif (wire('config')->trashPageID == $a['id']) {
+            $icon = $this->icon_trash;
+        }
+
+        if ($icon) {
+            $icon =  '<i class="fa fa-' . $icon . '"></i> ';
+            $a['label'] = $icon . $a['label'];
+        }
+     *
+        $event->return = $a;
+    }
+    */
+
+    public function hookAfterPageLabel($event)
+    {
+        $icon = null;
+
+        $page = $event->arguments(0);
+
+        $templateName = $page->template->get('name');
+
+        if ($templateName != 'admin') {
+            $extraClass = $this->get('std_icon_lg') ? ' fa-lg' : '';
+
+            $fName = 'icon_' . wire('sanitizer')->fieldName($templateName);
+            $icon = $this->get($fName);
+
+            if ($icon) {
+                $icon =  '<i class="fa fa-' . $icon . ' fa-fw' . $extraClass . '"></i> ';
+                $event->return = $icon . $event->return;
+            }
+        }
+    }
+}
