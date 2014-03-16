@@ -22,31 +22,43 @@ class AdminPageIcons extends WireData implements Module, ConfigurableModule
         );
     }
 
+    // Default settings
+    static $defaults = array(
+        'std_icon_lg' => 0,
+        'sys_icon_lg' => 0,
+
+        'icon_admin' => 'wrench',
+        'icon_404' => 'warning',
+        'icon_trash' => 'trash-o',
+
+        'icon_home' => 'home',
+        'icon_search' => 'search',
+        'icon_sitemap' => 'sitemap',
+        'icon_default' => 'file-o',
+        'icon_basic_page' => 'file-o',
+
+        'action_hide_label' => 0,
+
+        'icon_action_edit' => 'pencil',
+        'icon_action_view' => 'external-link',
+        'icon_action_new' => 'plus',
+        'icon_action_move' => 'sort',
+        'icon_action_empty' => 'eraser',
+        'icon_action_publish' => 'check-square-o',
+        'icon_action_hide' => 'eye-slash',
+    );
+
     public function __construct()
     {
         // Default settings
-        $this->set('std_icon_lg', 0);
-        $this->set('sys_icon_lg', 0);
+        foreach (self::$defaults as $key => $value) {
+            $this->set($key, $value);
+        }
+    }
 
-        $this->set('icon_admin', 'wrench');
-        $this->set('icon_404', 'warning');
-        $this->set('icon_trash', 'trash-o');
-
-        $this->set('icon_home', 'home');
-        $this->set('icon_search', 'search');
-        $this->set('icon_sitemap', 'sitemap');
-        $this->set('icon_default', 'file-o');
-        $this->set('icon_basic_page', 'file-o');
-
-        $this->set('action_hide_label', 0);
-
-        $this->set('icon_action_edit', 'pencil');
-        $this->set('icon_action_view', 'external-link');
-        $this->set('icon_action_new', 'plus');
-        $this->set('icon_action_move', 'sort');
-        $this->set('icon_action_empty', 'eraser');
-        $this->set('icon_action_publish', 'check-square-o');
-        $this->set('icon_action_hide', 'eye-slash');
+    public function getDefault($key)
+    {
+        return isset(self::$defaults[$key]) ? self::$defaults[$key] : null;
     }
 
     public function init()
@@ -100,7 +112,7 @@ class AdminPageIcons extends WireData implements Module, ConfigurableModule
             $f->setAttribute('value', $data[$fName]);
             $f->set('icon', $f->getAttribute('value'));
         }
-        $f->setAttribute('placeholder', wire('modules')->get('AdminPageIcons')->get($fName));
+        $f->setAttribute('placeholder', wire('modules')->get('AdminPageIcons')->getDefault($fName));
         $fs->add($f);
 
         $fName = 'icon_admin';
@@ -124,7 +136,7 @@ class AdminPageIcons extends WireData implements Module, ConfigurableModule
             $f->setAttribute('value', $data[$fName]);
             $f->set('icon', $f->getAttribute('value'));
         }
-        $f->setAttribute('placeholder', wire('modules')->get('AdminPageIcons')->get($fName));
+        $f->setAttribute('placeholder', wire('modules')->get('AdminPageIcons')->getDefault($fName));
         $fs->add($f);
 
         $inputfields->add($fs);
@@ -170,7 +182,7 @@ class AdminPageIcons extends WireData implements Module, ConfigurableModule
                 $f->setAttribute('value', $data[$fName]);
                 $f->set('icon', $f->getAttribute('value'));
             }
-            $f->setAttribute('placeholder', wire('modules')->get('AdminPageIcons')->get($fName));
+            $f->setAttribute('placeholder', wire('modules')->get('AdminPageIcons')->getDefault($fName));
             $fs->add($f);
 
             $count++;
@@ -225,7 +237,7 @@ class AdminPageIcons extends WireData implements Module, ConfigurableModule
                 $f->setAttribute('value', $data[$fName]);
                 $f->set('icon', $f->getAttribute('value'));
             }
-            $f->setAttribute('placeholder', wire('modules')->get('AdminPageIcons')->get($fName));
+            $f->setAttribute('placeholder', wire('modules')->get('AdminPageIcons')->getDefault($fName));
             $fs->add($f);
 
             $count++;
