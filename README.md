@@ -4,6 +4,8 @@ AdminPageIcons
 Custom font icons for Processwire admin page section both for page listing
 and actions
 
+(simple learning module for PW2.4)
+
 ## Install
 
 - Place the files from this module in /site/modules/AdminPageIcons/
