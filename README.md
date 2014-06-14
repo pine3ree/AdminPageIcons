@@ -2,9 +2,9 @@ AdminPageIcons
 ==============
 
 Custom font icons for Processwire admin page section both for page listing and
-actions (for actions pls wait for PW js update referenced here: https://github.com/ryancramerdesign/ProcessWire/pull/408)
+actions (for actions please wait for PW js update referenced here: https://github.com/ryancramerdesign/ProcessWire/pull/408, pw dev labeled 2.4.4 include this)
 
-(simple learning module for PW2.4)
+(simple module for PW2.4.4)
 
 ## Install
 
